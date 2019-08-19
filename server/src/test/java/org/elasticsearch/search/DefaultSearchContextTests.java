@@ -140,7 +140,7 @@ public class DefaultSearchContextTests extends ESTestCase {
             context1.sort(sortAndFormats);
 
             RescoreContext rescoreContext = mock(RescoreContext.class);
-            when(rescoreContext.getWindowSize()).thenReturn(500);
+            when(rescoreContext.getWindowSize()).thenReturn(500f);
             context1.addRescore(rescoreContext);
 
             exception = expectThrows(IllegalArgumentException.class, () -> context1.preProcess(false));

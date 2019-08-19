@@ -24,6 +24,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.elasticsearch.index.IndexSettings;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -62,8 +63,11 @@ public final class QueryRescorer implements Rescorer {
             }
         };
 
+        // Get number of docs to apply rescore
+        int computedRescoreWindowSize = RescoreContext.getComputedWindowSize(rescoreContext, topDocs.totalHits.value);
+
         // First take top slice of incoming docs, to be rescored:
-        TopDocs topNFirstPass = topN(topDocs, rescoreContext.getWindowSize());
+        TopDocs topNFirstPass = topN(topDocs, computedRescoreWindowSize);
 
         // Save doc IDs for which rescoring was applied to be used in score explanation
         Set<Integer> topNDocIDs = Collections.unmodifiableSet(
@@ -71,11 +75,12 @@ public final class QueryRescorer implements Rescorer {
         rescoreContext.setRescoredDocs(topNDocIDs);
 
         // Rescore them:
-        TopDocs rescored = rescorer.rescore(searcher, topNFirstPass, rescoreContext.getWindowSize());
+        TopDocs rescored = rescorer.rescore(searcher, topNFirstPass, computedRescoreWindowSize);
 
         // Splice back to non-topN hits and resort all of them:
         return combine(topDocs, rescored, (QueryRescoreContext) rescoreContext);
     }
+
 
     @Override
     public Explanation explain(int topLevelDocId, IndexSearcher searcher, RescoreContext rescoreContext,
@@ -161,7 +166,7 @@ public final class QueryRescorer implements Rescorer {
         private float rescoreQueryWeight = 1.0f;
         private QueryRescoreMode scoreMode;
 
-        public QueryRescoreContext(int windowSize) {
+        public QueryRescoreContext(Number windowSize) {
             super(windowSize, QueryRescorer.INSTANCE);
             this.scoreMode = QueryRescoreMode.Total;
         }

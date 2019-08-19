@@ -493,7 +493,7 @@ public class SearchModuleTests extends ESTestCase {
         }
 
         @Override
-        public RescoreContext innerBuildContext(int windowSize, QueryShardContext context) throws IOException {
+        public RescoreContext innerBuildContext(Number windowSize, QueryShardContext context) throws IOException {
             return null;
         }
     }

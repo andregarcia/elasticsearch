@@ -31,15 +31,16 @@ import java.util.Set;
  * they will need while rescoring.
  */
 public class RescoreContext {
-    private final int windowSize;
+    private final Number windowSize;
     private final Rescorer rescorer;
     private Set<Integer> rescoredDocs; //doc Ids for which rescoring was applied
+    private Integer computedWindowSize;
 
     /**
      * Build the context.
      * @param rescorer the rescorer actually performing the rescore.
      */
-    public RescoreContext(int windowSize, Rescorer rescorer) {
+    public RescoreContext(Number windowSize, Rescorer rescorer) {
         this.windowSize = windowSize;
         this.rescorer = rescorer;
     }
@@ -54,8 +55,16 @@ public class RescoreContext {
     /**
      * Size of the window to rescore.
      */
-    public int getWindowSize() {
+    public Number getWindowSize() {
         return windowSize;
+    }
+
+    public Integer getComputedWindowsSize(){
+        return computedWindowSize;
+    }
+
+    public void setComputedWindowSize(Integer computedWindowSize){
+        this.computedWindowSize = computedWindowSize;
     }
 
     public void setRescoredDocs(Set<Integer> docIds) {
@@ -71,5 +80,20 @@ public class RescoreContext {
      */
     public List<Query> getQueries() {
         return Collections.emptyList();
+    }
+
+    public static Integer getComputedWindowSize(RescoreContext rescoreContext, Long resultSize){
+        if(rescoreContext.getComputedWindowsSize() != null){
+            return rescoreContext.getComputedWindowsSize();
+        }
+        Integer computedWindowSize = null;
+        if(rescoreContext.getWindowSize().floatValue()<=1.0f){
+            computedWindowSize = (int)(resultSize*rescoreContext.getWindowSize().floatValue());
+        }
+        else{
+            computedWindowSize = rescoreContext.getWindowSize().intValue();
+        }
+        rescoreContext.setComputedWindowSize(computedWindowSize);
+        return computedWindowSize;
     }
 }

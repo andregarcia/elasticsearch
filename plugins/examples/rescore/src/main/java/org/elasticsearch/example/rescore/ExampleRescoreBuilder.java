@@ -107,7 +107,7 @@ public class ExampleRescoreBuilder extends RescorerBuilder<ExampleRescoreBuilder
     }
 
     @Override
-    public RescoreContext innerBuildContext(int windowSize, QueryShardContext context) throws IOException {
+    public RescoreContext innerBuildContext(Number windowSize, QueryShardContext context) throws IOException {
         IndexFieldData<?> factorField =
                 this.factorField == null ? null : context.getForField(context.fieldMapper(this.factorField));
         return new ExampleRescoreContext(windowSize, factor, factorField);
@@ -142,7 +142,7 @@ public class ExampleRescoreBuilder extends RescorerBuilder<ExampleRescoreBuilder
         @Nullable
         private final IndexFieldData<?> factorField;
 
-        ExampleRescoreContext(int windowSize, float factor, @Nullable IndexFieldData<?> factorField) {
+        ExampleRescoreContext(Number windowSize, float factor, @Nullable IndexFieldData<?> factorField) {
             super(windowSize, ExampleRescorer.INSTANCE);
             this.factor = factor;
             this.factorField = factorField;
@@ -155,7 +155,8 @@ public class ExampleRescoreBuilder extends RescorerBuilder<ExampleRescoreBuilder
         @Override
         public TopDocs rescore(TopDocs topDocs, IndexSearcher searcher, RescoreContext rescoreContext) throws IOException {
             ExampleRescoreContext context = (ExampleRescoreContext) rescoreContext;
-            int end = Math.min(topDocs.scoreDocs.length, rescoreContext.getWindowSize());
+            int calculatedRescoreWindowSize = RescoreContext.getComputedWindowSize(rescoreContext, (long)topDocs.scoreDocs.length);
+            int end = Math.min(topDocs.scoreDocs.length, calculatedRescoreWindowSize);
             for (int i = 0; i < end; i++) {
                 topDocs.scoreDocs[i].score *= context.factor;
             }
@@ -170,7 +171,7 @@ public class ExampleRescoreBuilder extends RescorerBuilder<ExampleRescoreBuilder
                  * them in (reader, field, docId) order because that is the
                  * order they are on disk.
                  */
-                ScoreDoc[] sortedByDocId = new ScoreDoc[topDocs.scoreDocs.length]; 
+                ScoreDoc[] sortedByDocId = new ScoreDoc[topDocs.scoreDocs.length];
                 System.arraycopy(topDocs.scoreDocs, 0, sortedByDocId, 0, topDocs.scoreDocs.length);
                 Arrays.sort(sortedByDocId, (a, b) -> a.doc - b.doc); // Safe because doc ids >= 0
                 Iterator<LeafReaderContext> leaves = searcher.getIndexReader().leaves().iterator();

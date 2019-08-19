@@ -220,7 +220,7 @@ final class DefaultSearchContext extends SearchContext {
             }
             int maxWindow = indexService.getIndexSettings().getMaxRescoreWindow();
             for (RescoreContext rescoreContext: rescore) {
-                if (rescoreContext.getWindowSize() > maxWindow) {
+                if (rescoreContext.getWindowSize().intValue() > maxWindow) {
                     throw new IllegalArgumentException("Rescore window [" + rescoreContext.getWindowSize() + "] is too large. "
                             + "It must be less than [" + maxWindow + "]. This prevents allocating massive heaps for storing the results "
                             + "to be rescored. This limit can be set by changing the [" + IndexSettings.MAX_RESCORE_WINDOW_SETTING.getKey()

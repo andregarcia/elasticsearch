@@ -456,7 +456,8 @@ abstract class TopDocsCollectorContext extends QueryCollectorContext {
             if (rescore) {
                 assert searchContext.sort() == null;
                 for (RescoreContext rescoreContext : searchContext.rescore()) {
-                    numDocs = Math.max(numDocs, rescoreContext.getWindowSize());
+                    int computedRescoreWindow = RescoreContext.getComputedWindowSize(rescoreContext, (long)totalNumDocs);
+                    numDocs = Math.max(numDocs, computedRescoreWindow);
                 }
             }
             return new SimpleTopDocsCollectorContext(reader, query, searchContext.sort(), searchContext.searchAfter(), numDocs,

@@ -23,6 +23,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.lucene.search.TopDocsAndMaxScore;
+import org.elasticsearch.index.IndexSettings;
 import org.elasticsearch.search.SearchPhase;
 import org.elasticsearch.search.internal.SearchContext;
 
@@ -44,6 +45,14 @@ public class RescorePhase implements SearchPhase {
         }
         try {
             for (RescoreContext ctx : context.rescore()) {
+                int maxRescoreWindow = context.getQueryShardContext().getIndexSettings().getMaxRescoreWindow();
+                int computedRescoreWindow = RescoreContext.getComputedWindowSize(ctx, context.queryResult().getTotalHits().value);
+                if(computedRescoreWindow>maxRescoreWindow){
+                    throw new ElasticsearchException("Computed rescore window [" + computedRescoreWindow + "] is too large. "
+                        + "It must be less than [" + maxRescoreWindow + "]. This prevents allocating massive heaps for storing the results "
+                        + "to be rescored. This limit can be set by changing the [" + IndexSettings.MAX_RESCORE_WINDOW_SETTING.getKey()
+                        + "] index level setting.");
+                }
                 topDocs = ctx.rescorer().rescore(topDocs, context.searcher(), ctx);
                 // It is the responsibility of the rescorer to sort the resulted top docs,
                 // here we only assert that this condition is met.

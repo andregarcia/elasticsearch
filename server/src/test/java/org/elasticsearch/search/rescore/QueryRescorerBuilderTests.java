@@ -290,7 +290,7 @@ public class QueryRescorerBuilderTests extends ESTestCase {
     private static RescorerBuilder<?> mutate(RescorerBuilder<?> original) throws IOException {
         RescorerBuilder<?> mutation = ESTestCase.copyWriteable(original, namedWriteableRegistry, QueryRescorerBuilder::new);
         if (randomBoolean()) {
-            Integer windowSize = original.windowSize();
+            Integer windowSize = original.windowSize().intValue();
             if (windowSize != null) {
                 mutation.windowSize(windowSize + 1);
             } else {

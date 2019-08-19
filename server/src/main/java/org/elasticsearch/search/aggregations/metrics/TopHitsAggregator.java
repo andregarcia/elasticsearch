@@ -41,6 +41,7 @@ import org.elasticsearch.common.lease.Releasables;
 import org.elasticsearch.common.lucene.Lucene;
 import org.elasticsearch.common.lucene.search.TopDocsAndMaxScore;
 import org.elasticsearch.common.util.LongObjectPagedHashMap;
+import org.elasticsearch.index.IndexSettings;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregator;
@@ -124,7 +125,7 @@ class TopHitsAggregator extends MetricsAggregator {
                     int topN = subSearchContext.from() + subSearchContext.size();
                     if (sort == null) {
                         for (RescoreContext rescoreContext : context.rescore()) {
-                            topN = Math.max(rescoreContext.getWindowSize(), topN);
+                            topN = Math.max(rescoreContext.getComputedWindowsSize(), topN);
                         }
                     }
                     // In the QueryPhase we don't need this protection, because it is build into the IndexSearcher,
@@ -170,6 +171,14 @@ class TopHitsAggregator extends MetricsAggregator {
         if (subSearchContext.sort() == null) {
             for (RescoreContext ctx : context().rescore()) {
                 try {
+                    int maxRescoreWindow = context.getQueryShardContext().getIndexSettings().getMaxRescoreWindow();
+                    int computedRescoreWindow = RescoreContext.getComputedWindowSize(ctx, context.queryResult().getTotalHits().value);
+                    if(computedRescoreWindow>maxRescoreWindow){
+                        throw new ElasticsearchException("Computed rescore window [" + computedRescoreWindow + "] is too large. "
+                            + "It must be less than [" + maxRescoreWindow + "]. This prevents allocating massive heaps for storing the results "
+                            + "to be rescored. This limit can be set by changing the [" + IndexSettings.MAX_RESCORE_WINDOW_SETTING.getKey()
+                            + "] index level setting.");
+                    }
                     topDocs = ctx.rescorer().rescore(topDocs, context.searcher(), ctx);
                 } catch (IOException e) {
                     throw new ElasticsearchException("Rescore TopHits Failed", e);

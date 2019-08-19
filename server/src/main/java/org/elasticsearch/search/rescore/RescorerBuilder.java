@@ -41,7 +41,7 @@ public abstract class RescorerBuilder<RB extends RescorerBuilder<RB>>
         implements NamedWriteable, ToXContentObject, Rewriteable<RescorerBuilder<RB>> {
     public static final int DEFAULT_WINDOW_SIZE = 10;
 
-    protected Integer windowSize;
+    protected Number windowSize;
 
     private static final ParseField WINDOW_SIZE_FIELD = new ParseField("window_size");
 
@@ -55,38 +55,43 @@ public abstract class RescorerBuilder<RB extends RescorerBuilder<RB>>
      * Read from a stream.
      */
     protected RescorerBuilder(StreamInput in) throws IOException {
-        windowSize = in.readOptionalVInt();
+        windowSize = in.readOptionalFloat();
     }
 
     @Override
     public final void writeTo(StreamOutput out) throws IOException {
-        out.writeOptionalVInt(this.windowSize);
+        if(this.windowSize instanceof Integer){
+            out.writeOptionalVInt(this.windowSize.intValue());
+        }
+        else {
+            out.writeOptionalFloat(this.windowSize.floatValue());
+        }
         doWriteTo(out);
     }
 
     protected abstract void doWriteTo(StreamOutput out) throws IOException;
 
     @SuppressWarnings("unchecked")
-    public RB windowSize(int windowSize) {
+    public RB windowSize(Number windowSize) {
         this.windowSize = windowSize;
         return (RB) this;
     }
 
-    public Integer windowSize() {
+    public Number windowSize() {
         return windowSize;
     }
 
     public static RescorerBuilder<?> parseFromXContent(XContentParser parser) throws IOException {
         String fieldName = null;
         RescorerBuilder<?> rescorer = null;
-        Integer windowSize = null;
+        Number windowSize = null;
         XContentParser.Token token;
         while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
             if (token == XContentParser.Token.FIELD_NAME) {
                 fieldName = parser.currentName();
             } else if (token.isValue()) {
                 if (WINDOW_SIZE_FIELD.match(fieldName, parser.getDeprecationHandler())) {
-                    windowSize = parser.intValue();
+                    windowSize = parser.numberValue();
                 } else {
                     throw new ParsingException(parser.getTokenLocation(), "rescore doesn't support [" + fieldName + "]");
                 }
@@ -100,7 +105,7 @@ public abstract class RescorerBuilder<RB extends RescorerBuilder<RB>>
             throw new ParsingException(parser.getTokenLocation(), "missing rescore type");
         }
         if (windowSize != null) {
-            rescorer.windowSize(windowSize.intValue());
+            rescorer.windowSize(windowSize);
         }
         return rescorer;
     }
@@ -123,7 +128,7 @@ public abstract class RescorerBuilder<RB extends RescorerBuilder<RB>>
      * execute the rescore against a particular shard.
      */
     public final RescoreContext buildContext(QueryShardContext context) throws IOException {
-        int finalWindowSize = windowSize == null ? DEFAULT_WINDOW_SIZE : windowSize;
+        Number finalWindowSize = windowSize == null ? DEFAULT_WINDOW_SIZE : windowSize;
         RescoreContext rescoreContext = innerBuildContext(finalWindowSize, context);
         return rescoreContext;
     }
@@ -131,7 +136,7 @@ public abstract class RescorerBuilder<RB extends RescorerBuilder<RB>>
     /**
      * Extensions override this to build the context that they need for rescoring.
      */
-    protected abstract RescoreContext innerBuildContext(int windowSize, QueryShardContext context) throws IOException;
+    protected abstract RescoreContext innerBuildContext(Number windowSize, QueryShardContext context) throws IOException;
 
     @Override
     public int hashCode() {

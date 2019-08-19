@@ -171,7 +171,7 @@ public class QueryRescorerBuilder extends RescorerBuilder<QueryRescorerBuilder> 
     }
 
     @Override
-    public QueryRescoreContext innerBuildContext(int windowSize, QueryShardContext context) throws IOException {
+    public QueryRescoreContext innerBuildContext(Number windowSize, QueryShardContext context) throws IOException {
         QueryRescoreContext queryRescoreContext = new QueryRescoreContext(windowSize);
         // query is rewritten at this point already
         queryRescoreContext.setQuery(queryBuilder.toQuery(context));
